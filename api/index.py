@@ -15,6 +15,35 @@ def verificar_link(link):
     except requests.RequestException:
         return False
 
+def obter_links_verdadeiros(link_player):
+    """
+    Função para fazer uma requisição ao link do player e obter os links de vídeo em resoluções 360p e 720p.
+    """
+    response = requests.get(link_player)
+
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        sources = soup.find_all('source')
+
+        video_links = {"360p": None, "720p": None}
+        
+        for source in sources:
+            video_link = source.get('src')
+            resolution = source.get('size')  # Obtém o atributo size para identificar a resolução
+            
+            if video_link and resolution:
+                if video_link.startswith('//'):
+                    video_link = 'https:' + video_link
+                
+                if resolution == "360":
+                    video_links["360p"] = video_link
+                elif resolution == "720":
+                    video_links["720p"] = video_link
+
+        return video_links
+    else:
+        return None
+
 @app.route("/api/pesquisa", methods=["GET"])
 def pesquisa():
     # Obtém o título do filme a partir do parâmetro na URL
@@ -26,7 +55,6 @@ def pesquisa():
     # URL de pesquisa no site
     url_busca = f"https://assistir.biz/busca?q={titulo}"
 
-    # Cabeçalhos para evitar bloqueios (definindo o User-Agent)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
@@ -63,7 +91,17 @@ def pesquisa():
                         src = 'http:' + src
                     
                     if verificar_link(src):
-                        return jsonify({"link_player": src}), 200
+                        # Obter links de 360p e 720p
+                        video_links = obter_links_verdadeiros(src)
+                        
+                        if video_links:
+                            return jsonify({
+                                "link_player": src,
+                                "resolucao_360p": video_links["360p"],
+                                "resolucao_720p": video_links["720p"]
+                            }), 200
+                        else:
+                            return jsonify({"erro": "Links de vídeo não encontrados!"}), 404
 
             # Se não encontrar o iframe correto com player=2, exibir erro
             return jsonify({"erro": "Link do player 2 não encontrado!"}), 404
