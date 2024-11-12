@@ -51,44 +51,22 @@ def pesquisa():
             # Usando BeautifulSoup para fazer o parsing do HTML da página do filme
             soup_filme = BeautifulSoup(response_filme.text, 'html.parser')
 
-            # Buscando o reprodutor de vídeo e as tags <source> que contêm as resoluções
-            sources = soup_filme.find_all("source")
-            sd_link = None
-            hd_link = None
+            # Buscando todos os iframes na página do filme
+            iframes = soup_filme.find_all("iframe", class_="iframe-fix")
 
-            for source in sources:
-                src = source.get('src')
-                if src:
-                    # Exibindo cada link extraído para depuração
-                    # print(f"Link encontrado: {src}")  # Removido para produção
+            # Procurando especificamente o iframe com 'player=2'
+            for iframe in iframes:
+                src = iframe.get('src')
+                if src and 'player=2' in src:
+                    # Se encontrado o player=2, verificar se o link está funcionando
+                    if not src.startswith('http://') and not src.startswith('https://'):
+                        src = 'http:' + src
+                    
+                    if verificar_link(src):
+                        return jsonify({"link_player": src}), 200
 
-                    # Se a resolução for 360 (sd), armazenar o link
-                    if 'sd' in src:
-                        sd_link = 'http:' + src if not src.startswith('http') else src
-                    # Se a resolução for 720 (hd), armazenar o link
-                    elif 'hd' in src:
-                        hd_link = 'http:' + src if not src.startswith('http') else src
-
-            # Verificar se os links encontrados são válidos
-            if sd_link and verificar_link(sd_link):
-                sd_link_status = sd_link
-            else:
-                sd_link_status = None
-
-            if hd_link and verificar_link(hd_link):
-                hd_link_status = hd_link
-            else:
-                hd_link_status = None
-
-            # Verificar qual link (sd ou hd) foi encontrado e retornar
-            if sd_link_status and hd_link_status:
-                return jsonify({"sd_link": sd_link_status, "hd_link": hd_link_status}), 200
-            elif sd_link_status:
-                return jsonify({"sd_link": sd_link_status}), 200
-            elif hd_link_status:
-                return jsonify({"hd_link": hd_link_status}), 200
-            else:
-                return jsonify({"erro": "Links de resolução não encontrados ou não funcionais!"}), 404
+            # Se não encontrar o iframe correto com player=2, exibir erro
+            return jsonify({"erro": "Link do player 2 não encontrado!"}), 404
 
         # Caso o filme não seja encontrado na busca
         return jsonify({"erro": "Filme não encontrado!"}), 404
