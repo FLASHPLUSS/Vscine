@@ -63,9 +63,11 @@ def pesquisa():
                     if not link_player.startswith('http://') and not link_player.startswith('https://'):
                         link_player = 'http:' + link_player
                     
-                    # Verificando se o link do player está funcionando
-                    if verificar_link(link_player):
-                        links_validos.append(link_player)
+                    # Filtrando os links que contêm o player
+                    if '/iframe/' in link_player:
+                        # Verificando se o link do player está funcionando
+                        if verificar_link(link_player):
+                            links_validos.append(link_player)
                     
                     # Se já tiver encontrado um link válido, podemos parar a busca
                     if links_validos:
