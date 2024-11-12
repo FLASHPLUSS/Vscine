@@ -51,9 +51,6 @@ def pesquisa():
             # Usando BeautifulSoup para fazer o parsing do HTML da página do filme
             soup_filme = BeautifulSoup(response_filme.text, 'html.parser')
 
-            # Depuração: imprima todo o HTML da página do filme para inspecionar as fontes de vídeo
-            print(soup_filme.prettify())
-
             # Buscando o reprodutor de vídeo e as tags <source> que contêm as resoluções
             sources = soup_filme.find_all("source")
             sd_link = None
@@ -63,7 +60,7 @@ def pesquisa():
                 src = source.get('src')
                 if src:
                     # Exibindo cada link extraído para depuração
-                    print(f"Link encontrado: {src}")
+                    # print(f"Link encontrado: {src}")  # Removido para produção
 
                     # Se a resolução for 360 (sd), armazenar o link
                     if 'sd' in src:
