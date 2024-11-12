@@ -12,11 +12,14 @@ def buscar_link_reproducao(titulo_filme):
     # Fazendo o request para buscar a página
     response = requests.get(url)
     
-    # Se a resposta for bem-sucedida
+    # Verificando se a resposta foi bem-sucedida
     if response.status_code == 200:
         # Parseando o conteúdo HTML com BeautifulSoup
         soup = BeautifulSoup(response.content, 'html.parser')
-
+        
+        # Log para verificar o conteúdo da página
+        print("Conteúdo da página:", soup.prettify())
+        
         # Procurando pelo link do player (iframe) na página
         iframe = soup.find('iframe')
         
@@ -28,6 +31,12 @@ def buscar_link_reproducao(titulo_filme):
                 if player_url.startswith('//'):
                     player_url = f"http:{player_url}"
                 return player_url
+            else:
+                print("Nenhum link de player encontrado no iframe.")
+        else:
+            print("Nenhum iframe encontrado na página.")
+    else:
+        print(f"Erro ao acessar o site: {response.status_code}")
     
     return None
 
