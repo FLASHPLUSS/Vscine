@@ -51,7 +51,7 @@ def pesquisa():
             # Usando BeautifulSoup para fazer o parsing do HTML da página do filme
             soup_filme = BeautifulSoup(response_filme.text, 'html.parser')
 
-            # Encontrando o iframe que contém o link do player
+            # Buscando o link de reprodução nos iframes
             iframe = soup_filme.find("iframe", class_="iframe-fix")
             if iframe:
                 link_player = iframe.get('src')
