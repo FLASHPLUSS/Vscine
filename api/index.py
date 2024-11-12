@@ -51,24 +51,24 @@ def pesquisa():
             # Usando BeautifulSoup para fazer o parsing do HTML da página do filme
             soup_filme = BeautifulSoup(response_filme.text, 'html.parser')
 
-            # Buscando o link de reprodução nos iframes
-            iframe = soup_filme.find("iframe", class_="iframe-fix")
-            if iframe:
-                link_player = iframe.get('src')
-                if link_player:
-                    # Verificando se o link do player precisa do prefixo http:
-                    if not link_player.startswith('http://') and not link_player.startswith('https://'):
-                        link_player = 'http:' + link_player
+            # Buscando todos os iframes na página do filme
+            iframes = soup_filme.find_all("iframe", class_="iframe-fix")
+
+            # Procurando especificamente o iframe com 'player=2'
+            for iframe in iframes:
+                src = iframe.get('src')
+                if src and 'player=2' in src:
+                    # Se encontrado o player=2, verificar se o link está funcionando
+                    if not src.startswith('http://') and not src.startswith('https://'):
+                        src = 'http:' + src
                     
-                    # Verificando se o link do player está funcionando
-                    if verificar_link(link_player):
-                        return jsonify({"link_player": link_player}), 200
+                    if verificar_link(src):
+                        return jsonify({"link_player": src}), 200
                     else:
-                        return jsonify({"erro": "Link do player não está funcionando!"}), 404
-                else:
-                    return jsonify({"erro": "Link do player não encontrado!"}), 404
-            else:
-                return jsonify({"erro": "Iframe com link do player não encontrado!"}), 404
+                        return jsonify({"erro": "Link do player 2 não está funcionando!"}), 404
+
+            # Se não encontrar o iframe correto com player=2
+            return jsonify({"erro": "Link do player 2 não encontrado!"}), 404
 
         # Caso o filme não seja encontrado na busca
         return jsonify({"erro": "Filme não encontrado!"}), 404
