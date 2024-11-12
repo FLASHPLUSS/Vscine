@@ -51,22 +51,30 @@ def pesquisa():
             # Usando BeautifulSoup para fazer o parsing do HTML da página do filme
             soup_filme = BeautifulSoup(response_filme.text, 'html.parser')
 
-            # Buscando todos os iframes na página do filme
-            iframes = soup_filme.find_all("iframe", class_="iframe-fix")
+            # Buscando o reprodutor de vídeo e as tags <source> que contêm as resoluções
+            sources = soup_filme.find_all("source")
+            sd_link = None
+            hd_link = None
 
-            # Procurando especificamente o iframe com 'player=2'
-            for iframe in iframes:
-                src = iframe.get('src')
-                if src and 'player=2' in src:
-                    # Se encontrado o player=2, verificar se o link está funcionando
-                    if not src.startswith('http://') and not src.startswith('https://'):
-                        src = 'http:' + src
-                    
-                    if verificar_link(src):
-                        return jsonify({"link_player": src}), 200
+            for source in sources:
+                src = source.get('src')
+                if src:
+                    # Se a resolução for 360 (sd), armazenar o link
+                    if 'sd' in src:
+                        sd_link = 'http:' + src if not src.startswith('http') else src
+                    # Se a resolução for 720 (hd), armazenar o link
+                    elif 'hd' in src:
+                        hd_link = 'http:' + src if not src.startswith('http') else src
 
-            # Se não encontrar o iframe correto com player=2, exibir erro
-            return jsonify({"erro": "Link do player 2 não encontrado!"}), 404
+            # Verificar qual link (sd ou hd) foi encontrado e retornar
+            if sd_link and hd_link:
+                return jsonify({"sd_link": sd_link, "hd_link": hd_link}), 200
+            elif sd_link:
+                return jsonify({"sd_link": sd_link}), 200
+            elif hd_link:
+                return jsonify({"hd_link": hd_link}), 200
+            else:
+                return jsonify({"erro": "Links de resolução não encontrados!"}), 404
 
         # Caso o filme não seja encontrado na busca
         return jsonify({"erro": "Filme não encontrado!"}), 404
