@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# Função para buscar o link do filme
+# Função para buscar o link de reprodução
 def buscar_link_reproducao(titulo_filme):
     # Formatação da URL de busca
     url = f"https://assistir.biz/busca?q={titulo_filme}"
@@ -24,8 +24,10 @@ def buscar_link_reproducao(titulo_filme):
             # Extraindo a URL do player
             player_url = iframe.get('src', '')
             if player_url:
-                # Se a URL for encontrada, retorna a URL completa
-                return f"https:{player_url}" if player_url.startswith('//') else player_url
+                # Se a URL começar com //, adiciona o http:
+                if player_url.startswith('//'):
+                    player_url = f"http:{player_url}"
+                return player_url
     
     return None
 
