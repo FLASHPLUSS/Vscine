@@ -4,31 +4,24 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# User-Agent para emular o Chrome
+# Cabeçalhos atualizados para emular melhor um navegador
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Language': 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1'
 }
-
-def extrair_link_video(url):
-    response = requests.get(url, headers=HEADERS)  # Incluindo o cabeçalho com o User-Agent
-    
-    if response.status_code != 200:
-        raise Exception(f"Erro ao acessar a URL: {response.status_code}")
-
-    doc = BeautifulSoup(response.text, 'html.parser')
-
-    # Encontrar o link de reprodução
-    assist_buttons = doc.find_all('a', class_='btn free fw-bold')
-    for button in assist_buttons:
-        if 'ASSISTIR' in button.text:
-            video_link = button['href']
-            return video_link.replace("http://", "").replace("https://", "")
-    
-    return "Link não encontrado."
 
 def extrair_urls_filmes(search_query):
     url = f"https://www.visioncine-1.com.br/search.php?q={search_query}"
-    response = requests.get(url, headers=HEADERS)  # Incluindo o cabeçalho com o User-Agent
+    
+    # Usando uma sessão para manter os cookies
+    session = requests.Session()
+    session.headers.update(HEADERS)
+
+    response = session.get(url)
 
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -53,17 +46,13 @@ def pesquisa():
         return jsonify({"error": "Consulta de pesquisa não fornecida."}), 400
     
     try:
-        # Obter URLs de filmes da pesquisa
         urls = extrair_urls_filmes(search_query)
         if not urls:
             return jsonify({"message": "Nenhum filme encontrado."}), 404
         
-        # Extrair os links de vídeo de cada URL de filme
         resultados = []
         for url in urls:
-            video_link = extrair_link_video(url)
-            if video_link != "Link não encontrado.":
-                resultados.append({"url": url, "link_video": video_link})
+            resultados.append({"url": url})
 
         return jsonify(resultados)
     except Exception as e:
