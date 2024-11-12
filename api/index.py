@@ -4,8 +4,12 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"
+}
+
 def extrair_dados_filme(url):
-    response = requests.get(url)
+    response = requests.get(url, headers=HEADERS)
     
     if response.status_code != 200:
         raise Exception(f"Erro ao acessar a URL: {response.status_code}")
@@ -62,13 +66,7 @@ def extrair_dados_filme(url):
 
 def extrair_urls_filmes(search_query):
     url = f"https://www.visioncine-1.com.br/search.php?q={search_query}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive"
-    }
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=HEADERS)
 
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
