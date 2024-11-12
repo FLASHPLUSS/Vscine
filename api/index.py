@@ -4,8 +4,13 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
+# User-Agent para emular o Chrome
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+}
+
 def extrair_link_video(url):
-    response = requests.get(url)
+    response = requests.get(url, headers=HEADERS)  # Incluindo o cabeçalho com o User-Agent
     
     if response.status_code != 200:
         raise Exception(f"Erro ao acessar a URL: {response.status_code}")
@@ -23,7 +28,7 @@ def extrair_link_video(url):
 
 def extrair_urls_filmes(search_query):
     url = f"https://www.visioncine-1.com.br/search.php?q={search_query}"
-    response = requests.get(url)
+    response = requests.get(url, headers=HEADERS)  # Incluindo o cabeçalho com o User-Agent
 
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
