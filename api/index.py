@@ -44,40 +44,31 @@ def pesquisa():
         if link_pagina_filme:
             filme_url = "https://assistir.biz" + link_pagina_filme['href']
 
-            # Agora vamos fazer uma requisição para pegar a página do filme e extrair os links dos players
+            # Agora vamos fazer uma requisição para pegar a página do filme e extrair o link do iframe
             response_filme = requests.get(filme_url, headers=headers)
             response_filme.raise_for_status()
 
             # Usando BeautifulSoup para fazer o parsing do HTML da página do filme
             soup_filme = BeautifulSoup(response_filme.text, 'html.parser')
 
-            # Encontrando todos os iframes de players
-            iframes = soup_filme.find_all("iframe")
-            links_validos = []
-
-            # Verificando cada link dos players
-            for iframe in iframes:
+            # Encontrando o iframe que contém o link do player
+            iframe = soup_filme.find("iframe", class_="iframe-fix")
+            if iframe:
                 link_player = iframe.get('src')
                 if link_player:
                     # Verificando se o link do player precisa do prefixo http:
                     if not link_player.startswith('http://') and not link_player.startswith('https://'):
                         link_player = 'http:' + link_player
                     
-                    # Filtrando os links que contêm o player
-                    if '/iframe/' in link_player:
-                        # Verificando se o link do player está funcionando
-                        if verificar_link(link_player):
-                            links_validos.append(link_player)
-                    
-                    # Se já tiver encontrado um link válido, podemos parar a busca
-                    if links_validos:
-                        break
-
-            if links_validos:
-                # Retorna o primeiro link válido encontrado
-                return jsonify({"link_player": links_validos[0]}), 200
+                    # Verificando se o link do player está funcionando
+                    if verificar_link(link_player):
+                        return jsonify({"link_player": link_player}), 200
+                    else:
+                        return jsonify({"erro": "Link do player não está funcionando!"}), 404
+                else:
+                    return jsonify({"erro": "Link do player não encontrado!"}), 404
             else:
-                return jsonify({"erro": "Nenhum link de player funcional encontrado!"}), 404
+                return jsonify({"erro": "Iframe com link do player não encontrado!"}), 404
 
         # Caso o filme não seja encontrado na busca
         return jsonify({"erro": "Filme não encontrado!"}), 404
