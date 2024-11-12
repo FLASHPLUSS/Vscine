@@ -32,7 +32,10 @@ def pesquisa():
         iframe = soup.find("iframe")
         if iframe:
             link_reproducao = iframe['src']
-            return jsonify({"link": f"http:{link_reproducao}"}), 200
+            # Verificando se o link não possui o prefixo http:// ou https://
+            if not link_reproducao.startswith('http://') and not link_reproducao.startswith('https://'):
+                link_reproducao = 'http:' + link_reproducao
+            return jsonify({"link": link_reproducao}), 200
 
         # Caso o link de reprodução não seja encontrado
         return jsonify({"erro": "Link de reprodução não encontrado!"}), 404
