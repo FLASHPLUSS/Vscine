@@ -4,6 +4,17 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
+def verificar_link(link):
+    """
+    Função auxiliar para verificar se o link do player está funcionando.
+    Retorna True se o link estiver funcionando (status 200), False caso contrário.
+    """
+    try:
+        response = requests.get(link, headers={"User-Agent": "Mozilla/5.0"})
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
+
 @app.route("/api/pesquisa", methods=["GET"])
 def pesquisa():
     # Obtém o título do filme a partir do parâmetro na URL
@@ -32,7 +43,39 @@ def pesquisa():
         link_pagina_filme = soup.find("a", class_="card__play")
         if link_pagina_filme:
             filme_url = "https://assistir.biz" + link_pagina_filme['href']
-            return jsonify({"link": filme_url}), 200
+
+            # Agora vamos fazer uma requisição para pegar a página do filme e extrair os links dos players
+            response_filme = requests.get(filme_url, headers=headers)
+            response_filme.raise_for_status()
+
+            # Usando BeautifulSoup para fazer o parsing do HTML da página do filme
+            soup_filme = BeautifulSoup(response_filme.text, 'html.parser')
+
+            # Encontrando todos os iframes de players
+            iframes = soup_filme.find_all("iframe")
+            links_validos = []
+
+            # Verificando cada link dos players
+            for iframe in iframes:
+                link_player = iframe.get('src')
+                if link_player:
+                    # Verificando se o link do player precisa do prefixo http:
+                    if not link_player.startswith('http://') and not link_player.startswith('https://'):
+                        link_player = 'http:' + link_player
+                    
+                    # Verificando se o link do player está funcionando
+                    if verificar_link(link_player):
+                        links_validos.append(link_player)
+                    
+                    # Se já tiver encontrado um link válido, podemos parar a busca
+                    if links_validos:
+                        break
+
+            if links_validos:
+                # Retorna o primeiro link válido encontrado
+                return jsonify({"link_player": links_validos[0]}), 200
+            else:
+                return jsonify({"erro": "Nenhum link de player funcional encontrado!"}), 404
 
         # Caso o filme não seja encontrado na busca
         return jsonify({"erro": "Filme não encontrado!"}), 404
