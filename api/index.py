@@ -1,54 +1,43 @@
 import requests
+from flask import Flask, jsonify, request
 from bs4 import BeautifulSoup
 
-# Função para buscar o link de reprodução do filme
-def buscar_links_reproducao(titulo_filme):
-    # URL base para a busca
-    url_base = f"https://assistir.biz/busca?q={titulo_filme}"
-    
-    # Cabeçalhos com o User-Agent para simular uma requisição de navegador
+app = Flask(__name__)
+
+@app.route("/buscar_filme", methods=["GET"])
+def buscar_filme():
+    # Pega o título do filme a partir da query string
+    titulo = request.args.get('titulo', '')
+
+    if not titulo:
+        return jsonify({"erro": "Título do filme não fornecido!"}), 400
+
+    # URL da pesquisa do filme
+    url = f"https://assistir.biz/busca?q={titulo}"
+
+    # Definindo o cabeçalho do User-Agent para evitar bloqueios
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
-    
-    # Fazendo a requisição para a página
-    response = requests.get(url_base, headers=headers)
-    
-    # Verificando se a requisição foi bem-sucedida
-    if response.status_code == 200:
+
+    try:
+        # Fazendo o request para o site
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+
+        # Usando BeautifulSoup para fazer o parse do HTML
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Procurando os botões de player
-        buttons = soup.find_all('button', class_='section__view')
-        
-        if buttons:
-            links = []
-            # Iterando sobre todos os botões de player encontrados
-            for button in buttons:
-                # Aqui vamos procurar o iframe que contém o link do player
-                iframe = button.find_next('iframe')
-                
-                if iframe and iframe.get('src'):
-                    player_url = iframe['src']
-                    
-                    # Se a URL começar com //, adiciona o http:
-                    if player_url.startswith('//'):
-                        player_url = f"http:{player_url}"
-                    
-                    links.append(player_url)
-            return links
-        else:
-            return {"erro": "Nenhum player encontrado na página!"}
-    else:
-        return {"erro": "Erro ao acessar a página!"}
 
-# Testando a função com um título de filme
-titulo = "coringa"
-links = buscar_links_reproducao(titulo)
+        # Localizando o iframe com o link de reprodução (ajuste conforme necessário)
+        iframe = soup.find("iframe")
+        if iframe:
+            link_reproducao = iframe['src']
+            return jsonify({"link": f"http:{link_reproducao}"})
 
-if 'erro' in links:
-    print(links['erro'])
-else:
-    print("Links encontrados:")
-    for link in links:
-        print(link)
+        return jsonify({"erro": "Link de reprodução não encontrado!"}), 404
+
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+if __name__ == "__main__":
+    app.run()
