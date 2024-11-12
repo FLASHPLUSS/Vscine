@@ -66,15 +66,26 @@ def pesquisa():
                     elif 'hd' in src:
                         hd_link = 'http:' + src if not src.startswith('http') else src
 
-            # Verificar qual link (sd ou hd) foi encontrado e retornar
-            if sd_link and hd_link:
-                return jsonify({"sd_link": sd_link, "hd_link": hd_link}), 200
-            elif sd_link:
-                return jsonify({"sd_link": sd_link}), 200
-            elif hd_link:
-                return jsonify({"hd_link": hd_link}), 200
+            # Verificar se os links encontrados funcionam
+            if sd_link and verificar_link(sd_link):
+                sd_link_status = sd_link
             else:
-                return jsonify({"erro": "Links de resolução não encontrados!"}), 404
+                sd_link_status = None
+
+            if hd_link and verificar_link(hd_link):
+                hd_link_status = hd_link
+            else:
+                hd_link_status = None
+
+            # Verificar qual link (sd ou hd) foi encontrado e retornar
+            if sd_link_status and hd_link_status:
+                return jsonify({"sd_link": sd_link_status, "hd_link": hd_link_status}), 200
+            elif sd_link_status:
+                return jsonify({"sd_link": sd_link_status}), 200
+            elif hd_link_status:
+                return jsonify({"hd_link": hd_link_status}), 200
+            else:
+                return jsonify({"erro": "Links de resolução não encontrados ou não funcionais!"}), 404
 
         # Caso o filme não seja encontrado na busca
         return jsonify({"erro": "Filme não encontrado!"}), 404
