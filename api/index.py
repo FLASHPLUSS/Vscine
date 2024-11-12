@@ -64,10 +64,8 @@ def pesquisa():
                     
                     if verificar_link(src):
                         return jsonify({"link_player": src}), 200
-                    else:
-                        return jsonify({"erro": "Link do player 2 não está funcionando!"}), 404
 
-            # Se não encontrar o iframe correto com player=2
+            # Se não encontrar o iframe correto com player=2, exibir erro
             return jsonify({"erro": "Link do player 2 não encontrado!"}), 404
 
         # Caso o filme não seja encontrado na busca
