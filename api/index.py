@@ -1,65 +1,54 @@
-from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
 
-app = Flask(__name__)
-
-# Função para buscar o link de reprodução
+# Função para buscar o link de reprodução do filme
 def buscar_links_reproducao(titulo_filme):
-    # Formatação da URL de busca
-    url = f"https://assistir.biz/busca?q={titulo_filme}"
+    # URL base para a busca
+    url_base = f"https://assistir.biz/busca?q={titulo_filme}"
     
-    # Fazendo o request para buscar a página
-    response = requests.get(url)
+    # Cabeçalhos com o User-Agent para simular uma requisição de navegador
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
     
-    # Verificando se a resposta foi bem-sucedida
+    # Fazendo a requisição para a página
+    response = requests.get(url_base, headers=headers)
+    
+    # Verificando se a requisição foi bem-sucedida
     if response.status_code == 200:
-        # Parseando o conteúdo HTML com BeautifulSoup
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Log para verificar o conteúdo da página
-        print("Conteúdo da página:", soup.prettify())
+        # Procurando os botões de player
+        buttons = soup.find_all('button', class_='section__view')
         
-        # Procurando todos os iframes na página
-        iframes = soup.find_all('iframe')
-        
-        if iframes:
+        if buttons:
             links = []
-            # Iterando sobre todos os iframes encontrados
-            for iframe in iframes:
-                player_url = iframe.get('src', '')
-                if player_url:
+            # Iterando sobre todos os botões de player encontrados
+            for button in buttons:
+                # Aqui vamos procurar o iframe que contém o link do player
+                iframe = button.find_next('iframe')
+                
+                if iframe and iframe.get('src'):
+                    player_url = iframe['src']
+                    
                     # Se a URL começar com //, adiciona o http:
                     if player_url.startswith('//'):
                         player_url = f"http:{player_url}"
+                    
                     links.append(player_url)
-            if links:
-                return links
-            else:
-                print("Nenhum link de player encontrado nos iframes.")
+            return links
         else:
-            print("Nenhum iframe encontrado na página.")
+            return {"erro": "Nenhum player encontrado na página!"}
     else:
-        print(f"Erro ao acessar o site: {response.status_code}")
-    
-    return None
+        return {"erro": "Erro ao acessar a página!"}
 
-# Rota da API
-@app.route('/api/reproduzir', methods=['GET'])
-def reproduzir():
-    # Obtendo o título do filme a partir dos parâmetros de query
-    titulo_filme = request.args.get('titulo')
-    
-    if not titulo_filme:
-        return jsonify({"erro": "O título do filme é obrigatório!"}), 400
-    
-    # Buscando os links de reprodução
-    links = buscar_links_reproducao(titulo_filme)
-    
-    if links:
-        return jsonify({"links": links})
-    else:
-        return jsonify({"erro": "Links de reprodução não encontrados!"}), 404
+# Testando a função com um título de filme
+titulo = "coringa"
+links = buscar_links_reproducao(titulo)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if 'erro' in links:
+    print(links['erro'])
+else:
+    print("Links encontrados:")
+    for link in links:
+        print(link)
